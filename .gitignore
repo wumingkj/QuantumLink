@@ -38,4 +38,6 @@ Thumbs.db
 *.log
 *.tmp
 .env
-quantumlink.*
+./*.db-wal
+./*.db-shm
+./*.db
