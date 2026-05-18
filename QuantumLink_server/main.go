@@ -53,7 +53,7 @@ func main() {
 	// 创建 API 处理器
 	authHandler := api.NewAuthHandler(cfg.JWTSecret)
 	userHandler := api.NewUserHandler()
-	contactHandler := api.NewContactHandler()
+	contactHandler := api.NewContactHandler(hub.IsUserOnline)
 	forumHandler := api.NewForumHandler()
 	vpnHandler := api.NewVPNHandler("", "", "")
 	secretHandler := api.NewSecretHandler()

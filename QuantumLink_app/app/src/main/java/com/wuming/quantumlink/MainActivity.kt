@@ -194,7 +194,8 @@ fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess, onAuthExpired: (
                         Contact(
                             id = j.optString("id", ""),
                             name = j.optString("nickname", j.optString("username", "")),
-                            status = ContactStatus.ONLINE
+                            status = if (j.optBoolean("is_online", false)) ContactStatus.ONLINE
+                                    else ContactStatus.OFFLINE
                         )
                     }
                 }
@@ -385,7 +386,8 @@ fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess, onAuthExpired: (
                                     Contact(
                                         id = j.optString("id", ""),
                                         name = j.optString("nickname", j.optString("username", "")),
-                                        status = ContactStatus.ONLINE
+                                        status = if (j.optBoolean("is_online", false)) ContactStatus.ONLINE
+                                                else ContactStatus.OFFLINE
                                     )
                                 }
                                 withContext(Dispatchers.Main) { contacts = newContacts }

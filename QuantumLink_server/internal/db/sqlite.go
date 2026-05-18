@@ -53,16 +53,8 @@ func migrate() error {
 	schema := `
 	PRAGMA writable_schema = ON;
 
-	-- 全新建表（开发阶段删除重建）
-	DROP TABLE IF EXISTS forum_replies;
-	DROP TABLE IF EXISTS forum_posts;
-	DROP TABLE IF EXISTS messages;
-	DROP TABLE IF EXISTS conversation_members;
-	DROP TABLE IF EXISTS conversations;
-	DROP TABLE IF EXISTS contacts;
-	DROP TABLE IF EXISTS users;
-
-	CREATE TABLE users (
+	-- 只在首次创建时建表，已有表不做删除（避免每次重启数据丢失）
+	CREATE TABLE IF NOT EXISTS users (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		username    TEXT UNIQUE NOT NULL,
 		phone       TEXT DEFAULT '',
@@ -70,19 +62,19 @@ func migrate() error {
 		nickname    TEXT NOT NULL,
 		avatar      TEXT DEFAULT '',
 		public_key  TEXT DEFAULT '',
-		status      INTEGER NOT NULL DEFAULT 0,  -- 0=正常 1=已注销
+		status      INTEGER NOT NULL DEFAULT 0,
 		created_at  INTEGER NOT NULL,
 		last_seen   INTEGER NOT NULL DEFAULT 0
 	);
 
-	CREATE TABLE contacts (
+	CREATE TABLE IF NOT EXISTS contacts (
 		user_id     INTEGER NOT NULL REFERENCES users(id),
 		contact_id  INTEGER NOT NULL REFERENCES users(id),
 		added_at    INTEGER NOT NULL,
 		PRIMARY KEY (user_id, contact_id)
 	);
 
-	CREATE TABLE conversations (
+	CREATE TABLE IF NOT EXISTS conversations (
 		id              TEXT PRIMARY KEY,
 		type            INTEGER NOT NULL DEFAULT 0,
 		name            TEXT DEFAULT '',
@@ -90,14 +82,14 @@ func migrate() error {
 		expires_at      INTEGER DEFAULT 0
 	);
 
-	CREATE TABLE conversation_members (
+	CREATE TABLE IF NOT EXISTS conversation_members (
 		conversation_id TEXT NOT NULL REFERENCES conversations(id),
 		user_id         INTEGER NOT NULL REFERENCES users(id),
 		joined_at       INTEGER NOT NULL,
 		PRIMARY KEY (conversation_id, user_id)
 	);
 
-	CREATE TABLE messages (
+	CREATE TABLE IF NOT EXISTS messages (
 		id              INTEGER PRIMARY KEY AUTOINCREMENT,
 		conversation_id TEXT NOT NULL,
 		sender_id       INTEGER NOT NULL REFERENCES users(id),
@@ -109,7 +101,7 @@ func migrate() error {
 	);
 	CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, created_at);
 
-	CREATE TABLE forum_posts (
+	CREATE TABLE IF NOT EXISTS forum_posts (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		author_id   INTEGER NOT NULL REFERENCES users(id),
 		title       TEXT NOT NULL,
@@ -120,7 +112,7 @@ func migrate() error {
 		created_at  INTEGER NOT NULL
 	);
 
-	CREATE TABLE forum_replies (
+	CREATE TABLE IF NOT EXISTS forum_replies (
 		id          INTEGER PRIMARY KEY AUTOINCREMENT,
 		post_id     INTEGER NOT NULL REFERENCES forum_posts(id),
 		author_id   INTEGER NOT NULL REFERENCES users(id),
@@ -128,7 +120,7 @@ func migrate() error {
 		created_at  INTEGER NOT NULL
 	);
 
-	-- UID 从 1000 开始
+	-- UID 从 1000 开始（仅首次）
 	INSERT OR IGNORE INTO sqlite_sequence (name, seq) VALUES ('users', 1000);
 
 	PRAGMA writable_schema = OFF;

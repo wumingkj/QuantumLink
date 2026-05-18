@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -11,12 +12,17 @@ import (
 	"quantumlink-server/internal/model"
 )
 
+// OnlineChecker 检查用户是否在线
+type OnlineChecker func(userID string) bool
+
 // ContactHandler 联系人相关的 HTTP 处理器
-type ContactHandler struct{}
+type ContactHandler struct {
+	isOnline OnlineChecker
+}
 
 // NewContactHandler 创建 ContactHandler
-func NewContactHandler() *ContactHandler {
-	return &ContactHandler{}
+func NewContactHandler(isOnline OnlineChecker) *ContactHandler {
+	return &ContactHandler{isOnline: isOnline}
 }
 
 // List 获取联系人列表
@@ -25,10 +31,10 @@ func (h *ContactHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	// 通过子查询获取联系人的详细信息
 	rows, err := db.DB.Query(
-		`SELECT u.id, u.username, u.nickname, u.avatar, u.public_key, u.created_at, u.last_seen, c.added_at
+		`SELECT u.id, u.username, u.nickname, u.avatar, u.public_key, u.status, u.created_at, u.last_seen, c.added_at
 		FROM contacts c
 		JOIN users u ON c.contact_id = u.id
-		WHERE c.user_id = ?
+		WHERE c.user_id = ? AND u.status = 0
 		ORDER BY c.added_at DESC`, userID,
 	)
 	if err != nil {
@@ -39,16 +45,21 @@ func (h *ContactHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	type ContactWithUser struct {
 		model.User
-		AddedAt int64 `json:"added_at"`
+		AddedAt   int64 `json:"added_at"`
+		IsOnline  bool  `json:"is_online"`
 	}
 
 	var contacts []*ContactWithUser
 	for rows.Next() {
 		c := &ContactWithUser{}
 		if err := rows.Scan(&c.ID, &c.Username, &c.Nickname, &c.Avatar,
-			&c.PublicKey, &c.CreatedAt, &c.LastSeen, &c.AddedAt); err != nil {
+			&c.PublicKey, &c.Status, &c.CreatedAt, &c.LastSeen, &c.AddedAt); err != nil {
 			writeJSON(w, http.StatusInternalServerError, model.ErrorResponse{Error: "数据读取错误"})
 			return
+		}
+		// 检查在线状态
+		if h.isOnline != nil {
+			c.IsOnline = h.isOnline(fmt.Sprintf("%d", c.ID))
 		}
 		contacts = append(contacts, c)
 	}
