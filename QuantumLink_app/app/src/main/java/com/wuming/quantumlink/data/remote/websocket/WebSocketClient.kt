@@ -42,6 +42,8 @@ class WebSocketClient {
         .pingInterval(PING_INTERVAL_MS, TimeUnit.MILLISECONDS)
         .writeTimeout(WRITE_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         .retryOnConnectionFailure(true)
+        .followRedirects(true)
+        .followSslRedirects(true)
         .build()
 
     private var webSocket: WebSocket? = null
@@ -143,9 +145,15 @@ class WebSocketClient {
             }
 
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-                Log.e(TAG, "连接失败: ${t.message}", t)
+                Log.e(TAG, "连接失败: ${t.message}")
+                Log.e(TAG, "URL: $serverUrl")
+                Log.e(TAG, "Response: ${response?.code} ${response?.message}")
+                if (response != null) {
+                    Log.e(TAG, "Headers: ${response.headers}")
+                }
                 _isConnected.set(false)
-                _messages.tryEmit(MessageEvent.Error(t.message ?: "未知错误"))
+                val errMsg = if (response != null) "HTTP ${response.code}" else t.localizedMessage ?: "未知错误"
+                _messages.tryEmit(MessageEvent.Error(errMsg))
                 scheduleReconnect()
             }
         })
