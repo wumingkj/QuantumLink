@@ -136,8 +136,8 @@ fun AccountSettingsScreen(
             SettingsRow(
                 icon = Icons.Default.Phone,
                 title = "手机号",
-                summary = "未设置",
-                onClick = { /* TODO */ }
+                summary = "暂不支持修改",
+                enabled = false
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 

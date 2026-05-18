@@ -76,7 +76,7 @@ func (h *ContactHandler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 不能添加自己为联系人
+	// 不能添加自己为联系人（userID 是 JWT 中的字符串 ID）
 	if req.ContactID == userID {
 		writeJSON(w, http.StatusBadRequest, model.ErrorResponse{Error: "不能添加自己为联系人"})
 		return

@@ -128,6 +128,9 @@ func migrate() error {
 		created_at  INTEGER NOT NULL
 	);
 
+	-- UID 从 1000 开始
+	INSERT OR IGNORE INTO sqlite_sequence (name, seq) VALUES ('users', 1000);
+
 	PRAGMA writable_schema = OFF;
 	`
 

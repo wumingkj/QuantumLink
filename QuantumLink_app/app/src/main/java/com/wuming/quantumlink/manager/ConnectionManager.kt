@@ -35,6 +35,8 @@ object ConnectionManager {
                                 info.userId
                             )
                         }
+                    } else if (im.isConnected) {
+                        Log.d(TAG, "应用回到前台，WS 已连接跳过重连")
                     }
                 }
                 Lifecycle.Event.ON_STOP -> {

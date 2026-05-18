@@ -33,8 +33,8 @@ class WebSocketClient {
     companion object {
         private const val TAG = "WSClient"
         private const val PING_INTERVAL_MS = 15_000L
-        private const val BASE_RECONNECT_DELAY_MS = 1_000L
-        private const val MAX_RECONNECT_DELAY_MS = 30_000L
+        private const val BASE_RECONNECT_DELAY_MS = 500L
+        private const val MAX_RECONNECT_DELAY_MS = 5_000L
         private const val WRITE_TIMEOUT_MS = 5_000L
     }
 

@@ -8,6 +8,8 @@ import com.wuming.quantumlink.domain.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
@@ -36,24 +38,37 @@ class IMManager private constructor() {
 
     private var currentUser: String = ""
     private var authJob: kotlinx.coroutines.Job? = null
+    private var connectScope: kotlinx.coroutines.CoroutineScope? = null
 
     fun connect(host: String, port: Int, userId: String) {
+        // 避免重复连接同一个用户
+        if (currentUser == userId && wsClient.isConnected) {
+            Log.d(TAG, "已连接，跳过重复连接")
+            return
+        }
+        // 先断开旧连接
+        if (wsClient.isConnected) {
+            wsClient.disconnect()
+        }
         currentUser = userId
         Constants.Server.host = host
         Constants.Server.port = port
+
+        // 取消旧的 AUTH 监听
+        authJob?.cancel()
+        connectScope?.cancel()
+        connectScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
         wsClient.connect(Constants.Server.wsUrl)
         Log.d(TAG, "IM 连接中: ${Constants.Server.wsUrl} user=$userId")
 
-        // 监听 Connected 事件，连接成功后发送 AUTH 帧
-        authJob?.cancel()
-        authJob = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Default).launch {
+        // 监听 Connected 事件，连接成功后发送 AUTH 帧（仅一次）
+        authJob = connectScope?.launch {
             messageEvents.collect { event ->
                 if (event is MessageEvent.Connected) {
                     Log.d(TAG, "WS 已连接，发送 AUTH 帧")
-                    // AUTH 帧: type=0x04, payload=JWT token
                     val token = com.wuming.quantumlink.data.remote.api.ApiClient.token
                     if (token.isNotEmpty()) {
-                        // 手动编码 AUTH 帧并发送
                         val authPayload = encodeAuthPacket(token)
                         wsClient.sendRaw(authPayload)
                     }
@@ -74,6 +89,7 @@ class IMManager private constructor() {
 
     fun disconnect() {
         authJob?.cancel()
+        connectScope?.cancel()
         wsClient.disconnect()
         Log.d(TAG, "IM 已断开")
     }
