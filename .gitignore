@@ -1,0 +1,40 @@
+# ── Go ──
+QuantumLink_server/quantumlink-server
+QuantumLink_server/quantumlink-server.exe
+QuantumLink_server/quantumlink-server-linux-*
+QuantumLink_server/quantumlink.db
+QuantumLink_server/*.db
+QuantumLink_server/*.db-wal
+QuantumLink_server/*.db-shm
+QuantumLink_server/go.sum
+
+# ── Android ──
+QuantumLink_app/.gradle/
+QuantumLink_app/build/
+QuantumLink_app/app/build/
+QuantumLink_app/local.properties
+QuantumLink_app/*.iml
+QuantumLink_app/.idea/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ── Kotlin ──
+*.class
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Other ──
+*.log
+*.tmp
+.env
