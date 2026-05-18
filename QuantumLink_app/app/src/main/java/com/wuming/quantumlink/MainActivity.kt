@@ -94,7 +94,8 @@ class MainActivity : ComponentActivity() {
                     }
                     QuantumLinkApp(
                         imManager = imManager,
-                        authInfo = authInfo!!
+                        authInfo = authInfo!!,
+                        onAuthExpired = { authInfo = null }
                     )
                 }
             }
@@ -136,7 +137,7 @@ private val navItems = listOf(
 // ========== 主界面 ==========
 
 @Composable
-fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess) {
+fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess, onAuthExpired: () -> Unit = {}) {
     val pagerState = rememberPagerState(pageCount = { navItems.size })
     val coroutineScope = rememberCoroutineScope()
 
@@ -425,7 +426,8 @@ fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess) {
                     onVpnConfigChange = { vpnConfig = it },
                     onProfileUpdated = { newNickname ->
                         currentNickname = newNickname
-                    }
+                    },
+                    onLogout = onAuthExpired
                 )
             }
         }

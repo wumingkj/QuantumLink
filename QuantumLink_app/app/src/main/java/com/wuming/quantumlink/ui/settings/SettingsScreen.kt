@@ -23,7 +23,7 @@ import kotlinx.coroutines.withContext
 
 /** 设置二级页面 */
 enum class SettingsSubPage {
-    NONE, NETWORK, PERMISSION, ABOUT
+    NONE, ACCOUNT, NETWORK, PERMISSION, ABOUT
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +33,8 @@ fun SettingsScreen(
     vpnConfig: VpnConfig,
     onVpnToggle: () -> Unit,
     onVpnConfigChange: (VpnConfig) -> Unit,
-    onProfileUpdated: ((String) -> Unit)? = null  // 昵称更新回调
+    onProfileUpdated: ((String) -> Unit)? = null,
+    onLogout: () -> Unit = {}
 ) {
     var subPage by remember { mutableStateOf(SettingsSubPage.NONE) }
 
@@ -42,6 +43,16 @@ fun SettingsScreen(
     }
 
     when (subPage) {
+        SettingsSubPage.ACCOUNT -> {
+            if (authInfo != null) {
+                AccountSettingsScreen(
+                    authInfo = authInfo,
+                    onBack = { subPage = SettingsSubPage.NONE },
+                    onLogout = { onLogout() },
+                    onProfileUpdated = onProfileUpdated
+                )
+            }
+        }
         SettingsSubPage.NETWORK -> {
             NetworkSettingsScreen(
                 config = vpnConfig,
@@ -60,6 +71,7 @@ fun SettingsScreen(
             SettingsMainPage(
                 authInfo = authInfo,
                 onProfileUpdated = onProfileUpdated,
+                onOpenAccount = { subPage = SettingsSubPage.ACCOUNT },
                 onOpenNetwork = { subPage = SettingsSubPage.NETWORK },
                 onOpenPermission = { subPage = SettingsSubPage.PERMISSION },
                 onOpenAbout = { subPage = SettingsSubPage.ABOUT }
@@ -69,10 +81,12 @@ fun SettingsScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsMainPage(
     authInfo: com.wuming.quantumlink.ui.auth.AuthSuccess? = null,
     onProfileUpdated: ((String) -> Unit)? = null,
+    onOpenAccount: () -> Unit = {},
     onOpenNetwork: () -> Unit,
     onOpenPermission: () -> Unit,
     onOpenAbout: () -> Unit
@@ -90,12 +104,11 @@ private fun SettingsMainPage(
         ) {
             // ── 账号信息 ──
             if (authInfo != null) {
-                var showEditDialog by remember { mutableStateOf(false) }
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clickable { showEditDialog = true }
+                        .clickable { onOpenAccount() }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -127,9 +140,9 @@ private fun SettingsMainPage(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                "UID: ${authInfo.userId} · 点此编辑资料",
+                                "UID: ${authInfo.userId}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                         Icon(Icons.Default.ChevronRight, null,
