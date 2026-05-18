@@ -143,6 +143,9 @@ fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess) {
     // 用 derivedStateOf 追踪当前页面，确保 BackHandler 条件准确响应
     val currentPage by remember { derivedStateOf { pagerState.currentPage } }
 
+    // 昵称可变状态，编辑资料后立即刷新界面
+    var currentNickname by remember { mutableStateOf(authInfo.nickname) }
+
     // 设置 API token
     LaunchedEffect(authInfo) {
         ApiClient.token = authInfo.token
@@ -411,7 +414,7 @@ fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess) {
                     onRefresh = { /* TODO: 刷新 */ }
                 )
                 4 -> SettingsScreen(
-                    authInfo = authInfo,
+                    authInfo = authInfo.copy(nickname = currentNickname),
                     vpnConfig = vpnConfig,
                     onVpnToggle = {
                         vpnConfig = vpnConfig.copy(
@@ -419,7 +422,10 @@ fun QuantumLinkApp(imManager: IMManager, authInfo: AuthSuccess) {
                             serverAddress = if (vpnConfig.serverAddress.isNotEmpty()) vpnConfig.serverAddress else "wg.example.com:51820"
                         )
                     },
-                    onVpnConfigChange = { vpnConfig = it }
+                    onVpnConfigChange = { vpnConfig = it },
+                    onProfileUpdated = { newNickname ->
+                        currentNickname = newNickname
+                    }
                 )
             }
         }

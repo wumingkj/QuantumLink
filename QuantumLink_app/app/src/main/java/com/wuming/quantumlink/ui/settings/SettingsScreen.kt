@@ -32,7 +32,8 @@ fun SettingsScreen(
     authInfo: com.wuming.quantumlink.ui.auth.AuthSuccess? = null,
     vpnConfig: VpnConfig,
     onVpnToggle: () -> Unit,
-    onVpnConfigChange: (VpnConfig) -> Unit
+    onVpnConfigChange: (VpnConfig) -> Unit,
+    onProfileUpdated: ((String) -> Unit)? = null  // 昵称更新回调
 ) {
     var subPage by remember { mutableStateOf(SettingsSubPage.NONE) }
 
@@ -58,6 +59,7 @@ fun SettingsScreen(
         SettingsSubPage.NONE -> {
             SettingsMainPage(
                 authInfo = authInfo,
+                onProfileUpdated = onProfileUpdated,
                 onOpenNetwork = { subPage = SettingsSubPage.NETWORK },
                 onOpenPermission = { subPage = SettingsSubPage.PERMISSION },
                 onOpenAbout = { subPage = SettingsSubPage.ABOUT }
@@ -70,6 +72,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsMainPage(
     authInfo: com.wuming.quantumlink.ui.auth.AuthSuccess? = null,
+    onProfileUpdated: ((String) -> Unit)? = null,
     onOpenNetwork: () -> Unit,
     onOpenPermission: () -> Unit,
     onOpenAbout: () -> Unit
@@ -92,6 +95,7 @@ private fun SettingsMainPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clickable { showEditDialog = true }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -123,15 +127,13 @@ private fun SettingsMainPage(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                "UID: ${authInfo.userId}",
+                                "UID: ${authInfo.userId} · 点此编辑资料",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        // 编辑按钮
-                        IconButton(onClick = { showEditDialog = true }) {
-                            Icon(Icons.Default.Edit, "编辑资料")
-                        }
+                        Icon(Icons.Default.ChevronRight, null,
+                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                     }
                 }
 
@@ -177,7 +179,15 @@ private fun SettingsMainPage(
                                     withContext(Dispatchers.Main) {
                                         if (result is com.wuming.quantumlink.data.remote.api.ApiResult.Success) {
                                             saveStatus = "✅ 已更新"
-                                            // 更新本地 authInfo（注意这是不可变的，需要外部刷新）
+                                            // 通知外部更新 authInfo
+                                            onProfileUpdated?.invoke(newNickname)
+                                            // 更新 LoginManager 中保存的昵称
+                                            val saved = com.wuming.quantumlink.manager.LoginManager.getSavedLogin()
+                                            if (saved != null) {
+                                                com.wuming.quantumlink.manager.LoginManager.saveLogin(
+                                                    saved.copy(nickname = newNickname)
+                                                )
+                                            }
                                         } else {
                                             val err = when (result) {
                                                 is com.wuming.quantumlink.data.remote.api.ApiResult.Error -> result.errorMessage()

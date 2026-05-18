@@ -38,3 +38,6 @@ Thumbs.db
 *.log
 *.tmp
 .env
+*.db
+*.db-shm
+*.db-wal
