@@ -67,7 +67,12 @@ func main() {
 	// 创建 HTTP mux
 	mux := http.NewServeMux()
 
-	// REST API（WebSocket 已移至独立端口 1050）
+	// WebSocket 端点（同时在 REST 端口提供服务，方便局域网直连）
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		handleWebSocket(hub, w, r)
+	})
+
+	// REST API
 	mux.Handle("/", router)
 
 	// 启动 REST API 服务
