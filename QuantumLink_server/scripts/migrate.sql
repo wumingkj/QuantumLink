@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     nickname    TEXT NOT NULL,
     avatar      TEXT DEFAULT '',
     public_key  TEXT DEFAULT '',
+    status      INTEGER NOT NULL DEFAULT 0,  -- 0=正常 1=已注销
     created_at  INTEGER NOT NULL,
     last_seen   INTEGER NOT NULL DEFAULT 0
 );

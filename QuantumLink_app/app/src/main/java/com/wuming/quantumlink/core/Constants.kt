@@ -21,10 +21,13 @@ object Constants {
     const val WG_TUN_MTU = 1280
 
     // 服务器 (默认值，可在设置中修改)
+    // Cloudflare: ws1→WS ws2→REST | 局域网: 直接填同一个 IP
     object Server {
-        var host: String = "192.168.1.100"
-        var port: Int = 8082
-        val wsUrl get() = "ws://$host:$port/ws"
-        val apiUrl get() = "http://$host:$port/api"
+        var host: String = "91s.us.ci"
+        var port: Int = 443
+        val wsUrl get() = if (host.contains('.'))
+            "wss://ws1.$host/ws" else "ws://$host:$port/ws"
+        val apiUrl get() = if (host.contains('.'))
+            "https://ws2.$host/api" else "http://$host:$port/api"
     }
 }

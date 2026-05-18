@@ -10,6 +10,7 @@ type User struct {
 	Nickname  string `json:"nickname"`
 	Avatar    string `json:"avatar"`
 	PublicKey string `json:"public_key,omitempty"`
+	Status    int    `json:"status"`     // 0=正常 1=已注销
 	CreatedAt int64  `json:"created_at"`
 	LastSeen  int64  `json:"last_seen"`
 }

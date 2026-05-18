@@ -20,8 +20,8 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		WSPort:             getEnv("WS_PORT", "8081"),
-		RESTPort:           getEnv("REST_PORT", "8082"),
+	WSPort:             getEnv("WS_PORT", "1050"),
+	RESTPort:           getEnv("REST_PORT", "1051"),
 		DatabasePath:       getEnv("DB_PATH", "quantumlink.db"),
 		JWTSecret:          getEnv("JWT_SECRET", "quantumlink-change-me-in-production"),
 		SecretExpireMinutes: getEnvInt("SECRET_EXPIRE_MIN", 30),

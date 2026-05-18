@@ -41,6 +41,7 @@ func NewRouter(authHandler *AuthHandler, userHandler *UserHandler,
 		r.Route("/api/users", func(r chi.Router) {
 			r.Get("/me", userHandler.GetMe)
 			r.Put("/me", userHandler.UpdateMe)
+			r.Delete("/me", userHandler.DeleteMe)
 			r.Get("/search", userHandler.Search)
 		})
 

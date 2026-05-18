@@ -19,8 +19,8 @@ func GetUserByIDStr(idStr string) (*model.User, error) {
 // CreateUser 创建用户（ID 由 SQLite 自动递增）
 func CreateUser(user *model.User) (int64, error) {
 	result, err := DB.Exec(
-		`INSERT INTO users (username, phone, password, nickname, avatar, created_at, last_seen)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO users (username, phone, password, nickname, avatar, status, created_at, last_seen)
+		VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
 		user.Username, user.Phone, user.Password, user.Nickname, user.Avatar, user.CreatedAt, user.LastSeen,
 	)
 	if err != nil {
@@ -33,10 +33,10 @@ func CreateUser(user *model.User) (int64, error) {
 func GetUserByID(id int64) (*model.User, error) {
 	user := &model.User{}
 	err := DB.QueryRow(
-		`SELECT id, username, COALESCE(phone,''), password, nickname, avatar, public_key, created_at, last_seen
+		`SELECT id, username, COALESCE(phone,''), password, nickname, avatar, public_key, status, created_at, last_seen
 		FROM users WHERE id = ?`, id,
 	).Scan(&user.ID, &user.Username, &user.Phone, &user.Password, &user.Nickname,
-		&user.Avatar, &user.PublicKey, &user.CreatedAt, &user.LastSeen)
+		&user.Avatar, &user.PublicKey, &user.Status, &user.CreatedAt, &user.LastSeen)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -47,10 +47,10 @@ func GetUserByID(id int64) (*model.User, error) {
 func GetUserByUsername(username string) (*model.User, error) {
 	user := &model.User{}
 	err := DB.QueryRow(
-		`SELECT id, username, COALESCE(phone,''), password, nickname, avatar, public_key, created_at, last_seen
+		`SELECT id, username, COALESCE(phone,''), password, nickname, avatar, public_key, status, created_at, last_seen
 		FROM users WHERE username = ?`, username,
 	).Scan(&user.ID, &user.Username, &user.Phone, &user.Password, &user.Nickname,
-		&user.Avatar, &user.PublicKey, &user.CreatedAt, &user.LastSeen)
+		&user.Avatar, &user.PublicKey, &user.Status, &user.CreatedAt, &user.LastSeen)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -61,10 +61,10 @@ func GetUserByUsername(username string) (*model.User, error) {
 func GetUserByPhone(phone string) (*model.User, error) {
 	user := &model.User{}
 	err := DB.QueryRow(
-		`SELECT id, username, COALESCE(phone,''), password, nickname, avatar, public_key, created_at, last_seen
+		`SELECT id, username, COALESCE(phone,''), password, nickname, avatar, public_key, status, created_at, last_seen
 		FROM users WHERE phone = ?`, phone,
 	).Scan(&user.ID, &user.Username, &user.Phone, &user.Password, &user.Nickname,
-		&user.Avatar, &user.PublicKey, &user.CreatedAt, &user.LastSeen)
+		&user.Avatar, &user.PublicKey, &user.Status, &user.CreatedAt, &user.LastSeen)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -77,8 +77,8 @@ func SearchUsers(query string, limit int) ([]*model.User, error) {
 		limit = 20
 	}
 	rows, err := DB.Query(
-		`SELECT id, username, COALESCE(phone,''), nickname, avatar, created_at, last_seen
-		FROM users WHERE username LIKE ? OR nickname LIKE ? OR CAST(id AS TEXT) LIKE ?
+		`SELECT id, username, COALESCE(phone,''), nickname, avatar, status, created_at, last_seen
+		FROM users WHERE status = 0 AND (username LIKE ? OR nickname LIKE ? OR CAST(id AS TEXT) LIKE ?)
 		LIMIT ?`, "%"+query+"%", "%"+query+"%", "%"+query+"%", limit,
 	)
 	if err != nil {
@@ -89,7 +89,7 @@ func SearchUsers(query string, limit int) ([]*model.User, error) {
 	var users []*model.User
 	for rows.Next() {
 		u := &model.User{}
-		if err := rows.Scan(&u.ID, &u.Username, &u.Phone, &u.Nickname, &u.Avatar, &u.CreatedAt, &u.LastSeen); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Phone, &u.Nickname, &u.Avatar, &u.Status, &u.CreatedAt, &u.LastSeen); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
@@ -102,6 +102,15 @@ func UpdateUser(user *model.User) error {
 	_, err := DB.Exec(
 		`UPDATE users SET nickname = ?, avatar = ?, phone = ?, public_key = ? WHERE id = ?`,
 		user.Nickname, user.Avatar, user.Phone, user.PublicKey, user.ID,
+	)
+	return err
+}
+
+// DeleteUser 注销用户（软删除：标记 status=1，清空敏感信息，保留记录）
+func DeleteUser(userIDStr string) error {
+	_, err := DB.Exec(
+		`UPDATE users SET status = 1, password = '', nickname = '已注销',
+		phone = '', avatar = '', public_key = '' WHERE id = ?`, userIDStr,
 	)
 	return err
 }

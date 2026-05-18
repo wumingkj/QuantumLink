@@ -52,6 +52,11 @@ fun AccountSettingsScreen(
     // 确认注销对话框
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    // 注销账号对话框
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteConfirmText by remember { mutableStateOf("") }
+    var deleteStatus by remember { mutableStateOf("") }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -164,6 +169,28 @@ fun AccountSettingsScreen(
                 Text("退出登录")
             }
 
+            Spacer(Modifier.height(8.dp))
+
+            // ── 注销账号 ──
+            OutlinedButton(
+                onClick = {
+                    deleteConfirmText = ""
+                    deleteStatus = ""
+                    showDeleteDialog = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .height(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Icon(Icons.Default.DeleteForever, null)
+                Spacer(Modifier.width(8.dp))
+                Text("注销账号")
+            }
+
             Spacer(Modifier.height(32.dp))
         }
     }
@@ -246,6 +273,70 @@ fun AccountSettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) { Text("取消") }
+            }
+        )
+    }
+
+    // ── 注销账号对话框 ──
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("注销账号", color = MaterialTheme.colorScheme.error) },
+            text = {
+                Column {
+                    Text("此操作不可撤销！账号数据将被清空。")
+                    Text("法律合规：服务端依法保留必要记录。", style = MaterialTheme.typography.bodySmall,
+                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = deleteConfirmText,
+                        onValueChange = { deleteConfirmText = it; deleteStatus = "" },
+                        label = { Text("输入 YES 确认注销") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (deleteStatus.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(deleteStatus, style = MaterialTheme.typography.bodySmall,
+                             color = if (deleteStatus.startsWith("✅")) MaterialTheme.colorScheme.primary
+                                     else MaterialTheme.colorScheme.error)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (deleteConfirmText != "YES") {
+                            deleteStatus = "❌ 请输入 YES 确认"
+                            return@TextButton
+                        }
+                        scope.launch(Dispatchers.IO) {
+                            val result = com.wuming.quantumlink.data.remote.api.ApiClient.delete("/users/me")
+                            withContext(Dispatchers.Main) {
+                                when (result) {
+                                    is com.wuming.quantumlink.data.remote.api.ApiResult.Success -> {
+                                        deleteStatus = "✅ 账号已注销"
+                                        LoginManager.clearLogin()
+                                        kotlinx.coroutines.delay(1000)
+                                        onLogout()
+                                    }
+                                    is com.wuming.quantumlink.data.remote.api.ApiResult.Error -> {
+                                        deleteStatus = "❌ ${result.errorMessage()}"
+                                    }
+                                    is com.wuming.quantumlink.data.remote.api.ApiResult.Failure -> {
+                                        deleteStatus = "❌ ${result.message}"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    enabled = deleteConfirmText == "YES"
+                ) {
+                    Text("确认注销", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("取消") }
             }
         )
     }

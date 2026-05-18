@@ -67,12 +67,7 @@ func main() {
 	// 创建 HTTP mux
 	mux := http.NewServeMux()
 
-	// WebSocket 端点
-	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		handleWebSocket(hub, w, r)
-	})
-
-	// REST API
+	// REST API（WebSocket 已移至独立端口 1050）
 	mux.Handle("/", router)
 
 	// 启动 REST API 服务
@@ -84,12 +79,19 @@ func main() {
 		}
 	}()
 
-	// 启动 WS 服务（开发阶段直接暴露，生产环境通过 Caddy 反代）
+	// 启动独立的 WebSocket 服务
 	wsAddr := fmt.Sprintf(":%s", cfg.WSPort)
-	log.Printf("WebSocket 服务启动于 %s", wsAddr)
+	wsMux := http.NewServeMux()
+	wsMux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		handleWebSocket(hub, w, r)
+	})
+	go func() {
+		log.Printf("WebSocket 服务启动于 %s", wsAddr)
+		if err := http.ListenAndServe(wsAddr, wsMux); err != nil {
+			log.Fatalf("WebSocket 服务启动失败: %v", err)
+		}
+	}()
 
-	// WS 和 REST 共享同一个 mux 时，只需要一个端口
-	// 这里用 REST 端口统一提供服务
 	select {}
 }
 

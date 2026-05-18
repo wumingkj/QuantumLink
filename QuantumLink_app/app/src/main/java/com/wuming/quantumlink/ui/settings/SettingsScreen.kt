@@ -81,7 +81,6 @@ fun SettingsScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsMainPage(
     authInfo: com.wuming.quantumlink.ui.auth.AuthSuccess? = null,
@@ -150,78 +149,6 @@ private fun SettingsMainPage(
                     }
                 }
 
-                // ── 编辑资料对话框 ──
-                if (showEditDialog) {
-                    var newNickname by remember { mutableStateOf(authInfo.nickname) }
-                    var saveStatus by remember { mutableStateOf("") }
-                    val scope = rememberCoroutineScope()
-
-                    AlertDialog(
-                        onDismissRequest = { showEditDialog = false },
-                        title = { Text("编辑资料") },
-                        text = {
-                            Column {
-                                OutlinedTextField(
-                                    value = newNickname,
-                                    onValueChange = { newNickname = it; saveStatus = "" },
-                                    label = { Text("昵称") },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text("UID: ${authInfo.userId}", style = MaterialTheme.typography.labelSmall,
-                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(Modifier.height(8.dp))
-                                Text("用户名: ${authInfo.username}", style = MaterialTheme.typography.labelSmall,
-                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (saveStatus.isNotEmpty()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(saveStatus, style = MaterialTheme.typography.bodySmall,
-                                         color = if (saveStatus.startsWith("✅")) MaterialTheme.colorScheme.primary
-                                                 else MaterialTheme.colorScheme.error)
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                scope.launch(Dispatchers.IO) {
-                                    val body = org.json.JSONObject().apply {
-                                        put("nickname", newNickname)
-                                    }
-                                    val result = com.wuming.quantumlink.data.remote.api.ApiClient.put("/users/me", body)
-                                    withContext(Dispatchers.Main) {
-                                        if (result is com.wuming.quantumlink.data.remote.api.ApiResult.Success) {
-                                            saveStatus = "✅ 已更新"
-                                            // 通知外部更新 authInfo
-                                            onProfileUpdated?.invoke(newNickname)
-                                            // 更新 LoginManager 中保存的昵称
-                                            val saved = com.wuming.quantumlink.manager.LoginManager.getSavedLogin()
-                                            if (saved != null) {
-                                                com.wuming.quantumlink.manager.LoginManager.saveLogin(
-                                                    saved.copy(nickname = newNickname)
-                                                )
-                                            }
-                                        } else {
-                                            val err = when (result) {
-                                                is com.wuming.quantumlink.data.remote.api.ApiResult.Error -> result.errorMessage()
-                                                is com.wuming.quantumlink.data.remote.api.ApiResult.Failure -> result.message
-                                                else -> "未知错误"
-                                            }
-                                            saveStatus = "❌ $err"
-                                        }
-                                    }
-                                }
-                            }) {
-                                Text("保存")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showEditDialog = false }) {
-                                Text("取消")
-                            }
-                        }
-                    )
-                }
             }
             Spacer(Modifier.height(8.dp))
 
