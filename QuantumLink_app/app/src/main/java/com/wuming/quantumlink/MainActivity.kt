@@ -110,11 +110,12 @@ class MainActivity : ComponentActivity() {
     /** 从 SharedPreferences 加载服务器配置 */
     private fun loadServerConfig() {
         val prefs = getSharedPreferences("quantumlink_prefs", MODE_PRIVATE)
-        val host = prefs.getString("server_host", "192.168.1.100") ?: "192.168.1.100"
-        val port = prefs.getInt("server_port", 8082)
+        // 清除旧的端口配置，统一使用默认值
+        prefs.edit().remove("server_port").apply()
+        val host = prefs.getString("server_host", Constants.Server.host) ?: Constants.Server.host
         Constants.Server.host = host
-        Constants.Server.port = port
-        Log.d(TAG, "加载服务器配置: $host:$port")
+        Constants.Server.port = 443 // Cloudflare 默认端口
+        Log.d(TAG, "加载服务器配置: $host:443 (Cloudflare)")
     }
 }
 

@@ -33,17 +33,15 @@ fun NetworkSettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // IM 服务器地址
-    var serverHost by remember { mutableStateOf(Constants.Server.host) }
-    var serverPort by remember { mutableStateOf(Constants.Server.port.toString()) }
+    // 加载保存的服务器域名
     val prefs = context.getSharedPreferences("quantumlink_prefs", Context.MODE_PRIVATE)
+    var serverHost by remember { mutableStateOf(
+        prefs.getString("server_host", Constants.Server.host) ?: Constants.Server.host
+    ) }
 
     // 首次加载时从 SharedPreferences 读取
     LaunchedEffect(Unit) {
         serverHost = prefs.getString("server_host", Constants.Server.host) ?: Constants.Server.host
-        serverPort = prefs.getInt("server_port", Constants.Server.port).toString()
-        Constants.Server.host = serverHost
-        Constants.Server.port = serverPort.toIntOrNull() ?: Constants.Server.port
     }
 
     Scaffold(
